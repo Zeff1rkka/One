@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Пароль</title>
+  <title>Квест-признание</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,14 +12,17 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      overflow: hidden;
     }
     .container {
       background: white;
       padding: 20px;
       border-radius: 15px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-      width: 320px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.15);
+      width: 420px;
       text-align: center;
+      position: relative;
+      z-index: 10;
     }
     input, button {
       width: 90%;
@@ -28,64 +31,269 @@
       border-radius: 8px;
       border: 1px solid #ccc;
       font-size: 14px;
+      box-sizing: border-box;
     }
     button {
       background: #4CAF50;
       color: white;
       border: none;
       cursor: pointer;
-      transition: 0.3s;
+      transition: 0.2s;
     }
-    button:hover {
-      background: #45a049;
+    button:hover { transform: translateY(-2px); }
+    .hidden { display: none; }
+    .error { color: red; font-size: 14px; min-height: 20px; }
+    .choices { display: flex; flex-direction: column; gap: 8px; }
+    .choice-btn {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #bbb;
+      background: #fff;
+      cursor: pointer;
+      font-size: 15px;
+      color: black;
+      text-align: center;
     }
-    .hidden {
+    .choice-btn:hover { background: #f7f7f7; }
+
+    /* финальная сцена */
+    .final-scene {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(to bottom, #202020, #000000);
+      overflow: hidden;
       display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 5;
     }
-    .error {
-      color: red;
-      font-size: 14px;
+    .rain {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
     }
-    .success {
+    .rain.back-row { z-index: 1; opacity: 0.3; }
+    .rain.front-row { z-index: 2; }
+    .drop {
+      position: absolute;
+      bottom: 100%;
+      width: 2px;
+      height: 100px;
+      animation: drop 1s linear infinite;
+    }
+    .stem {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), transparent);
+      animation: stem 1s linear infinite;
+    }
+    .splat {
+      width: 10px;
+      height: 10px;
+      margin-left: -4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      animation: splat 1s linear infinite;
+    }
+    @keyframes drop { 0% { transform: translateY(0); } 100% { transform: translateY(100vh); } }
+    @keyframes stem { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes splat { 0%, 80% { opacity: 0; transform: scale(0); } 90% { opacity: 0.5; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
+
+    .final-text {
+      white-space: pre-wrap;
+      margin-top: 15px;
+      text-align: left;
       font-size: 16px;
-      color: green;
-      font-weight: bold;
+      line-height: 1.5;
+      opacity: 0;
+      transition: opacity 2s ease-in-out;
+      color: #fff;
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 12px;
+      max-width: 600px;
+      z-index: 3;
+      position: relative;
+    }
+    .final-text.show { opacity: 1; }
+    .restart {
+      margin-top: 15px;
+      background: #ff5c5c;
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 3;
+      position: relative;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="login">
-      <h3>Введите пароль</h3>
-      <input type="password" id="password" placeholder="Пароль">
-      <button onclick="checkPassword()">Войти</button>
-      <p id="error" class="error"></p>
-    </div>
-
-    <div id="messageBlock" class="hidden">
-      <p class="success">Пароль верный ✅</p>
-      <p>💌ты мне нравишься я хотел тебе предложить
-        попробовать отношения я понимаю прекрасно всё 
-        но постараться на долго но не строить грандиозные
-        планы чтоб все не разрушилось принять друг друга такими
-        какие мы есть и жить настоящим а не прошлым 💌
-      </p>
-    </div>
+  <div class="container" id="login">
+    <h3>Введите пароль</h3>
+    <input type="password" id="password" placeholder="Пароль">
+    <button onclick="checkPassword()">Войти</button>
+    <p class="error" id="loginError"></p>
   </div>
 
-  <script>
-    const correctPassword = "Ты мне нравишься";
+  <div class="container hidden" id="quiz">
+    <h3 id="question"></h3>
+    <div class="choices" id="choices"></div>
+    <p class="error" id="error"></p>
+  </div>
 
-    function checkPassword() {
-      let input = document.getElementById("password").value.trim();
-      let error = document.getElementById("error");
-      if (input === correctPassword) {
-        document.getElementById("login").classList.add("hidden");
-        document.getElementById("messageBlock").classList.remove("hidden");
-      } else {
-        error.textContent = "Проверь правильность расстановки слов";
-      }
+  <!-- финальная сцена -->
+  <div class="final-scene" id="finalScene">
+    <div class="rain front-row"></div>
+    <div class="rain back-row"></div>
+    <div class="final-text" id="finalText">
+💌ты мне нравишься я хотел тебе предложить
+        попробовать отношения я понимаю прекрасно всё как это выглыдит
+        но я бы хотел постараться на долго но не строить грандиозные
+        планы чтоб все не разрушилось как обычно принять друг друга такими
+        какие мы есть и жить настоящим а не прошлым Надежда умирает последней ведь и вот я надеюсь что всё получится давай всё таки попробуем? 
+        
+(Этот квест был сделан для признания и предложения начать отношения необычным способом немножечко заебать)💌
+    </div>
+    <button class="restart" onclick="location.reload()">Начать заново</button>
+  </div>
+
+<script>
+const correctPassword = "ты мне нравишься";
+
+function checkPassword() {
+  let input = document.getElementById("password").value.trim().toLowerCase();
+  if (input === correctPassword.toLowerCase()) {
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("quiz").classList.remove("hidden");
+    loadQuestion();
+  } else {
+    document.getElementById("loginError").textContent = "Проверь правильность пароля";
+  }
+}
+
+const questions = [
+  {
+    q: "Когда мы впервые с тобой увиделись?",
+    options: ["На игре 2 августа", "Ночью 1 августа приехал смотреть привод", "Недавно", "Мы знакомы давно"],
+    answer: "Ночью 1 августа приехал смотреть привод"
+  },
+  {
+    q: "Когда у меня день рождения?",
+    options: ["Июнь", "Июль", "Май", "Август"],
+    answer: "Июнь"
+  },
+  {
+    q: "Какого числа?",
+    options: ["10", "15", "20", "25"],
+    answer: "15"
+  },
+  {
+    q: "Кто я по знаку зодиака?",
+    options: ["Весы", "Рак", "Близнецы", "Скорпион"],
+    answer: "Близнецы"
+  }
+];
+
+let current = 0;
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function loadQuestion() {
+  const q = questions[current];
+  document.getElementById("question").textContent = q.q;
+  const choicesDiv = document.getElementById("choices");
+  choicesDiv.innerHTML = "";
+  shuffle([...q.options]).forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = opt;
+    btn.onclick = () => checkAnswer(opt);
+    choicesDiv.appendChild(btn);
+  });
+}
+
+function checkAnswer(selected) {
+  const q = questions[current];
+  if (selected === q.answer) {
+    current++;
+    if (current < questions.length) {
+      loadQuestion();
+    } else {
+      showConfirmations();
     }
-  </script>
+  } else {
+    document.getElementById("error").textContent = "Попробуй ещё раз 😉";
+    loadQuestion(); // перемешиваем снова
+  }
+}
+
+function showConfirmations() {
+  const quiz = document.getElementById("quiz");
+  quiz.innerHTML = `
+    <p>Ты точно хочешь узнать что там дальше?</p>
+    <div style="display:flex; justify-content:center;">
+      <button onclick="nextConfirm(1)">Да</button>
+    </div>
+  `;
+}
+
+function nextConfirm(step) {
+  const quiz = document.getElementById("quiz");
+  if (step === 1) {
+    quiz.innerHTML = `
+      <p>Вот прям 100%?</p>
+      <div style="display:flex; justify-content:center;">
+        <button onclick="nextConfirm(2)">Да</button>
+      </div>
+    `;
+  } else if (step === 2) {
+    quiz.innerHTML = `
+      <p>Ты уверена на все 1000%?</p>
+      <div style="display:flex; justify-content:center;">
+        <button onclick="nextConfirm(3)">Да</button>
+      </div>
+    `;
+  } else if (step === 3) {
+    quiz.innerHTML = `
+      <p>Что там скрывается кое что изменит либо в плохую сторону либо в хорошую</p>
+      <div style="display:flex; justify-content:center;">
+        <button onclick="showFinalScene()">Да</button>
+      </div>
+    `;
+  }
+}
+function makeItRain() {
+  document.querySelectorAll('.rain').forEach(el => el.innerHTML = '');
+  let increment = 0, drops = '', backDrops = '';
+  while (increment < 100) {
+    const randoHundo = Math.floor(Math.random() * 98) + 1;
+    const randoFiver = Math.floor(Math.random() * 4) + 2;
+    increment += randoFiver;
+    const commonStyle = `left: ${increment}%; animation-delay: 0.${randoHundo}s; animation-duration: 1.${randoHundo}s;`;
+    const stemSplat = `
+      <div class="stem" style="animation-delay: 0.${randoHundo}s; animation-duration: 1.${randoHundo}s;"></div>
+      <div class="splat" style="animation-delay: 0.${randoHundo}s; animation-duration: 1.${randoHundo}s;"></div>
+    `;
+    drops += `<div class="drop" style="${commonStyle}">${stemSplat}</div>`;
+    backDrops += `<div class="drop" style="${commonStyle}">${stemSplat}</div>`;
+  }
+  document.querySelector('.rain.front-row').innerHTML = drops;
+  document.querySelector('.rain.back-row').innerHTML = backDrops;
+}
+
+function showFinalScene() {
+  document.getElementById("quiz").style.display = "none";
+  const final = document.getElementById("finalScene");
+  final.style.display = "flex";
+  makeItRain();
+  setTimeout(() => document.getElementById("finalText").classList.add("show"), 1000);
+}
+</script>
 </body>
 </html>
