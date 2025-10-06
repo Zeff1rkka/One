@@ -1,293 +1,392 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Квест-признание</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      overflow: hidden;
-    }
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.15);
-      width: 420px;
-      text-align: center;
-      position: relative;
-      z-index: 10;
-    }
-    input, button {
-      width: 90%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-    button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover { transform: translateY(-2px); }
-    .hidden { display: none; }
-    .error { color: red; font-size: 14px; min-height: 20px; }
-    .choices { display: flex; flex-direction: column; gap: 8px; }
-    .choice-btn {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #bbb;
-      background: #fff;
-      cursor: pointer;
-      font-size: 15px;
-      color: black;
-      text-align: center;
-    }
-    .choice-btn:hover { background: #f7f7f7; }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Анимированные сердечки — я люблю тебя</title>
+<style>
+  /* --- Сброс и фон --- */
+  :root{
+    --bg1: #0b1020;
+    --bg2: #2b0236;
+    --accent: #ff3366;
+    --text: #fff7f9;
+    --trans: rgba(255,255,255,0.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 10% 10%, rgba(255,80,160,0.06), transparent 10%),
+                linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:var(--text);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
 
-    /* финальная сцена */
-    .final-scene {
-      position: fixed;
-      inset: 0;
-      background: linear-gradient(to bottom, #202020, #000000);
-      overflow: hidden;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      z-index: 5;
-    }
-    .rain {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-    .rain.back-row { z-index: 1; opacity: 0.3; }
-    .rain.front-row { z-index: 2; }
-    .drop {
-      position: absolute;
-      bottom: 100%;
-      width: 2px;
-      height: 100px;
-      animation: drop 1s linear infinite;
-    }
-    .stem {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), transparent);
-      animation: stem 1s linear infinite;
-    }
-    .splat {
-      width: 10px;
-      height: 10px;
-      margin-left: -4px;
-      border-top: 1px solid rgba(255, 255, 255, 0.4);
-      border-radius: 50%;
-      animation: splat 1s linear infinite;
-    }
-    @keyframes drop { 0% { transform: translateY(0); } 100% { transform: translateY(100vh); } }
-    @keyframes stem { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-    @keyframes splat { 0%, 80% { opacity: 0; transform: scale(0); } 90% { opacity: 0.5; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
+  /* --- Контейнер --- */
+  .stage{
+    position:relative;
+    width:100%;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 20px;
+    gap:40px;
+  }
 
-    .final-text {
-      white-space: pre-wrap;
-      margin-top: 15px;
-      text-align: left;
-      font-size: 16px;
-      line-height: 1.5;
-      opacity: 0;
-      transition: opacity 2s ease-in-out;
-      color: #fff;
-      background: rgba(0,0,0,0.5);
-      padding: 15px;
-      border-radius: 12px;
-      max-width: 600px;
-      z-index: 3;
-      position: relative;
+  /* --- Пульсирующее сердце (справа/слева) --- */
+  .big-heart-wrap{
+    position:relative;
+    width:240px;
+    height:240px;
+    flex: 0 0 240px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6));
+  }
+
+  .big-heart{
+    position:relative;
+    width:120px;
+    height:120px;
+    transform: rotate(45deg);
+    animation: beat 1s infinite;
+  }
+  .big-heart::before,
+  .big-heart::after{
+    content:"";
+    position:absolute;
+    width:120px;
+    height:120px;
+    background:linear-gradient(180deg, #ff5b7a, #ff2a6b);
+    border-radius:50%;
+    top:-50%;
+    left:0;
+    transform-origin:center;
+    box-shadow:0 8px 30px rgba(255,40,100,0.25);
+  }
+  .big-heart::after{
+    left:-50%;
+    top:0;
+  }
+
+  /* пульсация + мягкое свечение вокруг */
+  .big-heart{
+    background:linear-gradient(180deg,#ff4d7a,#ff2a6b);
+    box-shadow: 0 6px 20px rgba(255,40,100,0.2), inset 0 -6px 18px rgba(0,0,0,0.15);
+  }
+  .big-heart-glow{
+    position:absolute;
+    width:360px;
+    height:360px;
+    border-radius:50%;
+    filter: blur(40px);
+    background: radial-gradient(circle at 40% 40%, rgba(255,80,150,0.16), rgba(255,40,120,0.06) 30%, transparent 50%);
+    z-index:-1;
+    animation: glow 3s infinite;
+  }
+
+  @keyframes beat {
+    0%{ transform: rotate(45deg) scale(1); }
+    12%{ transform: rotate(45deg) scale(1.08); }
+    28%{ transform: rotate(45deg) scale(0.95); }
+    48%{ transform: rotate(45deg) scale(1.02); }
+    100%{ transform: rotate(45deg) scale(1); }
+  }
+  @keyframes glow {
+    0%{ transform: scale(1); opacity:0.9; }
+    50%{ transform: scale(1.05); opacity:1; }
+    100%{ transform: scale(1); opacity:0.9; }
+  }
+
+  /* --- Текстовый блок --- */
+  .text-card{
+    max-width:760px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:18px;
+    padding:28px 28px;
+    backdrop-filter: blur(6px) saturate(1.05);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .text-card h1{
+    font-size:22px;
+    margin-bottom:10px;
+    letter-spacing:0.2px;
+    opacity:0.98;
+  }
+  .text-card p{
+    font-size:18px;
+    line-height:1.6;
+    color:rgba(255,245,245,0.95);
+    white-space:pre-wrap; /* сохраняет переносы */
+    opacity:0;
+    transform: translateY(8px);
+    animation: fadeInText 1.2s forwards 0.6s;
+  }
+
+  @keyframes fadeInText {
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  /* --- Маленькие сердечки (звездопад) --- */
+  .hearts-layer{
+    pointer-events:none;
+    position:fixed;
+    inset:0;
+    z-index:0;
+  }
+  .heart{
+    position:absolute;
+    width:18px;
+    height:18px;
+    transform: rotate(45deg);
+    will-change: transform, top, left, opacity;
+    opacity:0.95;
+  }
+  .heart::before,
+  .heart::after{
+    content:"";
+    position:absolute;
+    width:18px;
+    height:18px;
+    background:linear-gradient(180deg,#ff6b93,#ff3366);
+    border-radius:50%;
+    top:-9px;
+    left:0;
+  }
+  .heart::after{
+    left:9px;
+    top:0;
+  }
+  /* анимация падения и поворота */
+  @keyframes fall {
+    0%{
+      transform: translateY(-10vh) rotate(0deg) scale(0.8);
+      opacity:0;
     }
-    .final-text.show { opacity: 1; }
-    .restart {
-      margin-top: 15px;
-      background: #ff5c5c;
-      border: none;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      z-index: 3;
-      position: relative;
+    10%{ opacity:1 }
+    100%{
+      transform: translateY(120vh) rotate(360deg) scale(1.2);
+      opacity:0.95;
     }
-  </style>
+  }
+
+  /* Самые дальние сердечки (маленькие, светлые) */
+  .heart.small{ width:10px; height:10px; }
+  .heart.small::before, .heart.small::after{ width:10px; height:10px; top:-5px; left:0; }
+  .heart.small::after{ left:5px; top:0; }
+
+  /* Разные длительности/задержки задаются динамически через JS */
+
+  /* --- Адаптив --- */
+  @media (max-width:800px){
+    .stage{flex-direction:column; padding-top:80px; padding-bottom:80px}
+    .big-heart-wrap{order:2; margin-top:10px}
+    .text-card{order:1; width:100%}
+    .big-heart-wrap{width:180px;height:180px;flex:0 0 180px}
+    .big-heart{width:92px;height:92px}
+    .big-heart::before,.big-heart::after{width:92px;height:92px}
+  }
+
+  /* --- Небольшие украшения для текста --- */
+  .signature{
+    margin-top:14px;
+    font-size:15px;
+    color:rgba(255,230,235,0.9);
+    opacity:0.9;
+  }
+
+  /* Лёгкие мерцания фона как звёздочки */
+  .twinkle{
+    position:fixed;
+    inset:0;
+    mix-blend-mode:screen;
+    pointer-events:none;
+    z-index:0;
+  }
+  .twinkle span{
+    position:absolute;
+    width:2px;height:2px;border-radius:50%;
+    background:rgba(255,255,255,0.9);
+    opacity:0.04;
+    animation: tw 6s infinite;
+  }
+  @keyframes tw {
+    0%{opacity:0.05; transform: scale(1)}
+    50%{opacity:0.4; transform: scale(1.8)}
+    100%{opacity:0.05; transform: scale(1)}
+  }
+</style>
 </head>
 <body>
-  <div class="container" id="login">
-    <h3>Введите пароль</h3>
-    <input type="password" id="password" placeholder="Пароль">
-    <button onclick="checkPassword()">Войти</button>
-    <p class="error" id="loginError"></p>
-  </div>
+  <div class="hearts-layer" id="hearts"></div>
+  <div class="twinkle" id="twinkle"></div>
 
-  <div class="container hidden" id="quiz">
-    <h3 id="question"></h3>
-    <div class="choices" id="choices"></div>
-    <p class="error" id="error"></p>
-  </div>
-
-  <!-- финальная сцена -->
-  <div class="final-scene" id="finalScene">
-    <div class="rain front-row"></div>
-    <div class="rain back-row"></div>
-    <div class="final-text" id="finalText">
-ну блять тупо спалился ну нравишься я восхищаюсь тобой 
+  <div class="stage" role="main" aria-label="Анимация сердечек и текст о любви">
+    <div class="text-card" aria-live="polite">
+      <h1>Твои слова, от всего сердца</h1>
+      <p id="loveText">
+я люблю тебя и хочу посвятить свою жизнь тебе навечно я жду тот самый день когда ты скажешь да и вот мы стоим у алтаря давая клятву друг другу и наконец поцеловать тебя
+      </p>
+      <div class="signature">— навсегда твоё сердце</div>
     </div>
-    <button class="restart" onclick="location.reload()">Начать заново</button>
+
+    <div class="big-heart-wrap" aria-hidden="true">
+      <div class="big-heart-glow"></div>
+      <div class="big-heart"></div>
+    </div>
   </div>
 
 <script>
-const correctPassword = "ты мне нравишься";
+/*
+  JS: создаёт падающие сердечки (малый "звездопад") и twinkle фоновый мерцающий слой.
+  Сердечки получают случайные позиции, размеры, длительности и задержки.
+*/
 
-function checkPassword() {
-  let input = document.getElementById("password").value.trim().toLowerCase();
-  if (input === correctPassword.toLowerCase()) {
-    document.getElementById("login").classList.add("hidden");
-    document.getElementById("quiz").classList.remove("hidden");
-    loadQuestion();
-  } else {
-    document.getElementById("loginError").textContent = "Проверь правильность пароля";
+(function(){
+  const heartsContainer = document.getElementById('hearts');
+  const twinkle = document.getElementById('twinkle');
+
+  // Параметры - можно менять
+  const HEART_COUNT = 28;   // сколько сердечек одновременно создадим
+  const TWINKLE_COUNT = 40; // количество маленьких звёздочек
+
+  // Создаём twinkle точки
+  for(let i=0;i<TWINKLE_COUNT;i++){
+    const s = document.createElement('span');
+    const left = Math.random()*100;
+    const top = Math.random()*100;
+    s.style.left = left + 'vw';
+    s.style.top = top + 'vh';
+    s.style.width = (1 + Math.random()*2) + 'px';
+    s.style.height = s.style.width;
+    s.style.opacity = 0.02 + Math.random()*0.12;
+    s.style.animationDelay = (Math.random()*6)+'s';
+    s.style.animationDuration = (4 + Math.random()*8) + 's';
+    twinkle.appendChild(s);
   }
-}
 
-const questions = [
-  {
-    q: "Когда мы впервые с тобой увиделись?",
-    options: ["На игре 2 августа", "Ночью 1 августа приехал смотреть привод", "Недавно", "Мы знакомы давно"],
-    answer: "Ночью 1 августа приехал смотреть привод"
-  },
-  {
-    q: "Когда у меня день рождения?",
-    options: ["Июнь", "Июль", "Май", "Август"],
-    answer: "Июнь"
-  },
-  {
-    q: "Какого числа?",
-    options: ["10", "15", "20", "25"],
-    answer: "15"
-  },
-  {
-    q: "Кто я по знаку зодиака?",
-    options: ["Весы", "Рак", "Близнецы", "Скорпион"],
-    answer: "Близнецы"
+  // Функция создания одного сердечка
+  function createHeart(opts = {}){
+    const el = document.createElement('div');
+    el.className = 'heart';
+    if(opts.small) el.classList.add('small');
+
+    // случайная стартовая позиция по горизонтали
+    const left = (opts.left !== undefined) ? opts.left : (Math.random()*105 - 2); // может чуть выходить за край
+    el.style.left = left + 'vw';
+
+    // случайный масштаб
+    const scale = opts.scale || (0.6 + Math.random()*1.2);
+    el.style.transform = `rotate(45deg) scale(${scale})`;
+
+    // анимация fall: задаём длительность и задержку
+    const duration = (opts.duration !== undefined) ? opts.duration : (6 + Math.random()*8);
+    const delay = (opts.delay !== undefined) ? opts.delay : (Math.random()*-10); // чтобы часть уже падала сразу
+
+    el.style.animation = `fall ${duration}s linear ${delay}s infinite`;
+
+    // небольшая вариативность по opacity и blur
+    el.style.opacity = 0.7 + Math.random()*0.35;
+
+    heartsContainer.appendChild(el);
+
+    // удалять не нужно, у нас infinite; если нужно — можно управлять по событиям
+    return el;
   }
-];
 
-let current = 0;
+  // Генерация нескольких
+  for(let i=0;i<HEART_COUNT;i++){
+    // делаем часть маленькими
+    const small = Math.random() < 0.45;
+    createHeart({
+      small: small,
+      left: Math.random()*100,
+      scale: small ? (0.45 + Math.random()*0.6) : (0.7 + Math.random()*1.0),
+      duration: 5 + Math.random()*9,
+      delay: Math.random()*-12
+    });
+  }
 
-function shuffle(arr) {
-  return arr.sort(() => Math.random() - 0.5);
-}
-
-function loadQuestion() {
-  const q = questions[current];
-  document.getElementById("question").textContent = q.q;
-  const choicesDiv = document.getElementById("choices");
-  choicesDiv.innerHTML = "";
-  shuffle([...q.options]).forEach(opt => {
-    const btn = document.createElement("button");
-    btn.className = "choice-btn";
-    btn.textContent = opt;
-    btn.onclick = () => checkAnswer(opt);
-    choicesDiv.appendChild(btn);
-  });
-}
-
-function checkAnswer(selected) {
-  const q = questions[current];
-  if (selected === q.answer) {
-    current++;
-    if (current < questions.length) {
-      loadQuestion();
-    } else {
-      showConfirmations();
+  // Для динамики: периодически спавним дополнительные сердечки с разными параметрами
+  setInterval(()=>{
+    // иногда спавним несколько
+    const count = 1 + Math.floor(Math.random()*2);
+    for(let i=0;i<count;i++){
+      const small = Math.random() < 0.5;
+      // создаём новый узел и удаляем его через большой промежуток (чтобы не засорять DOM навсегда)
+      const h = createHeart({
+        small,
+        left: Math.random()*100,
+        scale: small ? (0.45 + Math.random()*0.6) : (0.7 + Math.random()*1.0),
+        duration: 5 + Math.random()*8,
+        delay: 0
+      });
+      // удалим через 30-45 секунд — но анимация infinite, поэтому просто удаляем элемент
+      setTimeout(()=>{ h.remove(); }, 42000 + Math.random()*8000);
     }
-  } else {
-    document.getElementById("error").textContent = "Попробуй ещё раз 😉";
-    loadQuestion(); // перемешиваем снова
-  }
-}
+  }, 1200);
 
-function showConfirmations() {
-  const quiz = document.getElementById("quiz");
-  quiz.innerHTML = `
-    <p>Ты точно хочешь узнать что там дальше?</p>
-    <div style="display:flex; justify-content:center;">
-      <button onclick="nextConfirm(1)">Да</button>
-    </div>
-  `;
-}
 
-function nextConfirm(step) {
-  const quiz = document.getElementById("quiz");
-  if (step === 1) {
-    quiz.innerHTML = `
-      <p>Вот прям 100%?</p>
-      <div style="display:flex; justify-content:center;">
-        <button onclick="nextConfirm(2)">Да</button>
-      </div>
-    `;
-  } else if (step === 2) {
-    quiz.innerHTML = `
-      <p>Ты уверена на все 1000%?</p>
-      <div style="display:flex; justify-content:center;">
-        <button onclick="nextConfirm(3)">Да</button>
-      </div>
-    `;
-  } else if (step === 3) {
-    quiz.innerHTML = `
-      <p>Что там скрывается кое что изменит либо в плохую сторону либо в хорошую</p>
-      <div style="display:flex; justify-content:center;">
-        <button onclick="showFinalScene()">Да</button>
-      </div>
-    `;
-  }
-}
-function makeItRain() {
-  document.querySelectorAll('.rain').forEach(el => el.innerHTML = '');
-  let increment = 0, drops = '', backDrops = '';
-  while (increment < 100) {
-    const randoHundo = Math.floor(Math.random() * 98) + 1;
-    const randoFiver = Math.floor(Math.random() * 4) + 2;
-    increment += randoFiver;
-    const commonStyle = `left: ${increment}%; animation-delay: 0.${randoHundo}s; animation-duration: 1.${randoHundo}s;`;
-    const stemSplat = `
-      <div class="stem" style="animation-delay: 0.${randoHundo}s; animation-duration: 1.${randoHundo}s;"></div>
-      <div class="splat" style="animation-delay: 0.${randoHundo}s; animation-duration: 1.${randoHundo}s;"></div>
-    `;
-    drops += `<div class="drop" style="${commonStyle}">${stemSplat}</div>`;
-    backDrops += `<div class="drop" style="${commonStyle}">${stemSplat}</div>`;
-  }
-  document.querySelector('.rain.front-row').innerHTML = drops;
-  document.querySelector('.rain.back-row').innerHTML = backDrops;
-}
+  // Немного интерактива: при клике на карточку — кратковременный усиленный "удар" сердца
+  const bigHeart = document.querySelector('.big-heart');
+  document.querySelector('.text-card').addEventListener('click', ()=>{
+    bigHeart.style.animation = 'beat 0.7s infinite';
+    // небольшой увеличенный удар
+    bigHeart.animate([
+      { transform: 'rotate(45deg) scale(1)' },
+      { transform: 'rotate(45deg) scale(1.18)' },
+      { transform: 'rotate(45deg) scale(0.98)' },
+      { transform: 'rotate(45deg) scale(1.06)' },
+      { transform: 'rotate(45deg) scale(1)' }
+    ], { duration: 650, easing: 'cubic-bezier(.2,.9,.3,1)' });
+    // убрать временно, animation уже живёт в CSS; но можно оставить
+  });
 
-function showFinalScene() {
-  document.getElementById("quiz").style.display = "none";
-  const final = document.getElementById("finalScene");
-  final.style.display = "flex";
-  makeItRain();
-  setTimeout(() => document.getElementById("finalText").classList.add("show"), 1000);
-}
+  // Небольшой эффект "печатания" для текста (плавное появление слов)
+  const loveText = document.getElementById('loveText');
+  const text = loveText.textContent.trim();
+  loveText.textContent = '';
+  // разобраться с переносами: сохраним пробелы и точки
+  let i = 0;
+  function typeStep(){
+    if(i <= text.length){
+      loveText.textContent = text.slice(0, i);
+      i++;
+      // скорость немного варьируется
+      setTimeout(typeStep, 18 + Math.random()*28);
+    } else {
+      // после печати — лёгкий мерцающий эффект
+      loveText.animate([
+        { opacity: 0.98 },
+        { opacity: 1 },
+        { opacity: 0.98 }
+      ], { duration: 1800, iterations: Infinity, direction: 'alternate' });
+    }
+  }
+  // запускаем с небольшой задержкой
+  setTimeout(typeStep, 600);
+
+  // защитная подстройка для уменьшения нагрузки на мобильных устройствах:
+  function reduceAnimationsForLowPower(){
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if(isMobile){
+      // уменьшаем количество сердечек
+      const existing = heartsContainer.children.length;
+      for(let k=0;k<existing/2;k++){
+        if(heartsContainer.firstChild) heartsContainer.firstChild.remove();
+      }
+    }
+  }
+  reduceAnimationsForLowPower();
+
+})();
 </script>
 </body>
 </html>
