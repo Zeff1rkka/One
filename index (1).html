@@ -1,0 +1,129 @@
+<!doctype html>
+
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Link-in-bio</title>
+  <style>
+    :root{
+      --bg-url: url('background.jpg');
+      --accent: #ffffff;
+      --muted: rgba(255,255,255,0.85);
+      --card-bg: rgba(0,0,0,0.45);
+      --glass: rgba(255,255,255,0.06);
+      --radius: 14px;
+      --max-width: 420px;
+      --gap: 14px;
+    }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background-image: var(--bg-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  color:var(--accent);
+  background-color:#111;
+}
+
+.wrap{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 20px;
+}
+
+.card{
+  width:100%;
+  max-width:var(--max-width);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.18));
+  border-radius:20px;
+  padding:28px 20px 30px;
+  text-align:center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+}
+
+.avatar{
+  width:128px;
+  height:128px;
+  border-radius:50%;
+  overflow:hidden;
+  margin:-80px auto 18px;
+  display:block;
+  border:6px solid rgba(255,255,255,0.06);
+  background:var(--glass);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5), 0 2px 6px rgba(255,255,255,0.03) inset;
+}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+
+h1{margin:6px 0 4px;font-size:20px;letter-spacing:0.2px}
+p.bio{
+  margin:0 0 18px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.6;
+  padding:0 6px;
+}
+
+.links{display:flex;flex-direction:column;gap:var(--gap);align-items:stretch;padding:6px 4px}
+.link{
+  display:block;
+  text-decoration:none;
+  padding:12px 16px;
+  border-radius:12px;
+  background:var(--card-bg);
+  color:var(--accent);
+  font-weight:600;
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+.link:active{transform:translateY(1px)}
+.link:hover{
+  transform:translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.28));
+}
+
+.small{font-size:12px;color:rgba(255,255,255,0.6);margin-top:12px}
+
+
+@media (max-width:420px){
+  .avatar{width:112px;height:112px;margin-top:-64px}
+  .card{padding:22px}
+}
+.bg-solid body{background-image:none; background-color:#0b0b0e}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <a class="avatar" href="#">
+        <img src="avatar.png" alt="Аватар">
+      </a><h1>Завет / Двойник</h1>
+  <p class="bio">
+  приветствую в навигации<br>
+  меня зовут "Завет"<br>
+  второй это "Двойник"<br>
+  ниже есть кнопки если надо перейти куда то<br>
+  </p>
+
+  <nav class="links">
+    <a class="link" href="https://www.tiktok.com/@dupecopy?_r=1&_d=e7lad4ka81c40a&sec_uid=MS4wLjABAAAAkabgu6iy3ZeoQZmstMJGNyssNOQYOXBQL3JpIU_yICiQoMoY2pncOTnEpeJU00-R&share_author_id=7541153769461253128&sharer_language=ru&source=h5_m&u_code=em2ekh5imb12k8&timestamp=1761115142&user_id=7541153769461253128&sec_user_id=MS4wLjABAAAAkabgu6iy3ZeoQZmstMJGNyssNOQYOXBQL3JpIU_yICiQoMoY2pncOTnEpeJU00-R&item_author_type=1&utm_source=copy&utm_campaign=client_share&utm_medium=android&share_iid=7563190186768336660&share_link_id=b5c1aee8-4e7a-454c-9c1e-19d7593653ed&share_app_id=1233&ugbiz_name=ACCOUNT&ug_btm=b8727%2Cb7360&social_share_type=5&enable_checksum=1" target="_blank" rel="noopener">TikTok</a>
+    <a class="link" href="https://t.me/CovenantDupe" target="_blank" rel="noopener">Telegram</a>
+    <a class="link" href="https://t.me/CovenantDupe" target="_blank" rel="noopener">Instagram</a>
+  </nav>
+
+  <div class="small"></div>
+</div>
+
+  </div>
+  </body>
+</html>
