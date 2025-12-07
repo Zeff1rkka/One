@@ -1,44 +1,75 @@
 export default async function handler(req, res) {
-  // Убедитесь, что здесь ваш никнейм.
   const username = "dupecopy"; 
-
-  // URL оригинального счетчика
-  const tiktokCountUrl = `https://tokcount.com/?user=${username}`;
-
-  // URL прокси AllOrigins. Мы просим AllOrigins запросить данные с tiktokCountUrl.
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(tiktokCountUrl)}`;
+  // URL Livecounts.io
+  const targetUrl = `https://livecounts.io/tiktok-live-follower-counter/${username}`;
 
   try {
-    // 1. Отправляем запрос на прокси-сервис AllOrigins
-    const response = await fetch(proxyUrl);
-    
+    const response = await fetch(targetUrl, {
+        headers: {
+            // Максимальная маскировка под браузер
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+        }
+    });
+
     if (!response.ok) {
-        throw new Error(`Прокси-запрос не удался со статусом: ${response.status}`);
+        throw new Error(`Запрос к Livecounts.io не удался со статусом: ${response.status}`);
     }
 
-    // Получаем HTML, который AllOrigins вернул с сайта tokcount.com
     const html = await response.text();
     
-    // --- РЕГУЛЯРНЫЕ ВЫРАЖЕНИЯ (вернулись к оригинальным) ---
+    // --- ПОПЫТКА 1: Поиск в JSON-конфигурации (Самый надежный) ---
+    // Ищем строку, содержащую JSON-данные о пользователе
+    const userDataMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*(.*?);\s*<\/script>/s);
+
+    let followers = 0;
+    let likes = 0;
+    let avatar = "";
     
-    // Эти выражения ищут данные в HTML-коде, который вернул tokcount.com
-    const followersMatch = html.match(/"followerCount":(\d+)/);
-    const likesMatch = html.match(/"heartCount":(\d+)/);
-    const avatarMatch = html.match(/"avatarLarger":"(.*?)"/);
+    if (userDataMatch && userDataMatch[1]) {
+        // Если нашли JSON, парсим его
+        try {
+            const dataJson = JSON.parse(userDataMatch[1]);
+            // Пытаемся достать данные из внутренней структуры JSON
+            followers = dataJson.tiktok?.user?.stats?.followerCount || 0;
+            likes = dataJson.tiktok?.user?.stats?.heartCount || 0;
+            avatar = dataJson.tiktok?.user?.avatarLarger || "";
+            
+            // Если данные успешно найдены в JSON, завершаем работу
+            return res.status(200).json({
+                user: username,
+                followers: followers,
+                likes: likes,
+                avatar: avatar,
+                updated: Date.now()
+            });
+
+        } catch (jsonError) {
+            // Если парсинг JSON не удался, продолжаем искать в HTML (Попытка 2)
+            console.error("JSON parsing failed, falling back to regex:", jsonError.message);
+        }
+    }
     
-    // --- ПАРСИНГ И ВОЗВРАТ ---
+    // --- ПОПЫТКА 2: Поиск в HTML через регулярные выражения (Резервный) ---
+    // Находим число в блоке с ID 'rc' (real count)
+    const followersMatch = html.match(/id="rc">([\d,]+)/);
+    // Находим лайки
+    const likesMatch = html.match(/Total Likes.*?<span class="lcn-text-num">([\d,]+)/s);
+    // Находим аватар
+    const avatarMatch = html.match(/class="profile-pic" src="(.*?)"/);
+
+    const cleanNumber = (match) => {
+        return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0;
+    };
 
     res.status(200).json({
       user: username,
-      // Возвращаем 0, если данные не найдены
-      followers: followersMatch ? Number(followersMatch[1]) : 0,
-      likes: likesMatch ? Number(likesMatch[1]) : 0,
-      // Заменяем кодировку URL на обычные слеши
-      avatar: avatarMatch ? avatarMatch[1].replace(/\\u002F/g, "/") : "",
+      followers: cleanNumber(followersMatch),
+      likes: cleanNumber(likesMatch),
+      avatar: avatarMatch ? avatarMatch[1] : "",
       updated: Date.now()
     });
 
   } catch (e) {
-    res.status(500).json({ error: "Ошибка прокси или парсинга", details: e.message });
+    res.status(500).json({ error: "Критическая ошибка скрейпинга (Livecounts.io)", details: e.message });
   }
 }
