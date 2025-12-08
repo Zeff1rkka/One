@@ -1,75 +1,60 @@
+// /api/tiktok.js
 export default async function handler(req, res) {
   const username = "dupecopy"; 
-  // URL Livecounts.io
-  const targetUrl = `https://livecounts.io/tiktok-live-follower-counter/${username}`;
+  // Используем прокси AllOrigins для обхода блокировок при запросе к странице TikTok
+  const profileUrl = `https://www.tiktok.com/@${username}`;
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(profileUrl)}`;
 
   try {
-    const response = await fetch(targetUrl, {
+    const response = await fetch(proxyUrl, {
         headers: {
-            // Максимальная маскировка под браузер
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+            // Маскировка под обычный браузер
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36'
         }
     });
 
     if (!response.ok) {
-        throw new Error(`Запрос к Livecounts.io не удался со статусом: ${response.status}`);
+        throw new Error(`Прокси-запрос не удался со статусом: ${response.status}`);
     }
 
     const html = await response.text();
     
-    // --- ПОПЫТКА 1: Поиск в JSON-конфигурации (Самый надежный) ---
-    // Ищем строку, содержащую JSON-данные о пользователе
-    const userDataMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*(.*?);\s*<\/script>/s);
-
-    let followers = 0;
-    let likes = 0;
-    let avatar = "";
+    // Регулярное выражение для поиска ID, времени и описания последнего видео
+    // Данные ищутся в JSON-блоке, который TikTok встраивает в HTML.
+    const videoDataMatch = html.match(/\"video\":\{\"id\":\"(\d+)\".*?\"createTime\":\"(\d+)\".*?\"desc\":\"(.*?)\".*?\"stats\":\{\"followerCount\":(\d+),\"heartCount\":(\d+)\}/s);
+    const avatarMatch = html.match(/\"avatarLarger\":\"(.*?)\"/);
     
-    if (userDataMatch && userDataMatch[1]) {
-        // Если нашли JSON, парсим его
-        try {
-            const dataJson = JSON.parse(userDataMatch[1]);
-            // Пытаемся достать данные из внутренней структуры JSON
-            followers = dataJson.tiktok?.user?.stats?.followerCount || 0;
-            likes = dataJson.tiktok?.user?.stats?.heartCount || 0;
-            avatar = dataJson.tiktok?.user?.avatarLarger || "";
-            
-            // Если данные успешно найдены в JSON, завершаем работу
-            return res.status(200).json({
-                user: username,
-                followers: followers,
-                likes: likes,
-                avatar: avatar,
-                updated: Date.now()
-            });
-
-        } catch (jsonError) {
-            // Если парсинг JSON не удался, продолжаем искать в HTML (Попытка 2)
-            console.error("JSON parsing failed, falling back to regex:", jsonError.message);
-        }
-    }
-    
-    // --- ПОПЫТКА 2: Поиск в HTML через регулярные выражения (Резервный) ---
-    // Находим число в блоке с ID 'rc' (real count)
-    const followersMatch = html.match(/id="rc">([\d,]+)/);
-    // Находим лайки
-    const likesMatch = html.match(/Total Likes.*?<span class="lcn-text-num">([\d,]+)/s);
-    // Находим аватар
-    const avatarMatch = html.match(/class="profile-pic" src="(.*?)"/);
-
-    const cleanNumber = (match) => {
-        return match ? parseInt(match[1].replace(/,/g, ''), 10) : 0;
+    let stats = {
+        followers: 0, 
+        likes: 0
     };
+    let videoInfo = {
+        latestVideoId: null,
+        latestVideoTime: 0,
+        latestVideoDesc: null,
+        latestVideoUrl: null
+    };
+    
+    // Если удалось найти данные о видео и статистике
+    if (videoDataMatch) {
+      videoInfo.latestVideoId = videoDataMatch[1];
+      videoInfo.latestVideoTime = Number(videoDataMatch[2]) * 1000; 
+      videoInfo.latestVideoDesc = videoDataMatch[3].replace(/\\u002F/g, "/"); 
+      videoInfo.latestVideoUrl = `https://www.tiktok.com/@${username}/video/${videoInfo.latestVideoId}`;
+
+      stats.followers = Number(videoDataMatch[4]);
+      stats.likes = Number(videoDataMatch[5]);
+    }
 
     res.status(200).json({
       user: username,
-      followers: cleanNumber(followersMatch),
-      likes: cleanNumber(likesMatch),
-      avatar: avatarMatch ? avatarMatch[1] : "",
+      ...stats, // Подписчики и лайки
+      ...videoInfo, // Информация о видео
+      avatar: avatarMatch ? avatarMatch[1].replace(/\\u002F/g, "/") : "",
       updated: Date.now()
     });
 
   } catch (e) {
-    res.status(500).json({ error: "Критическая ошибка скрейпинга (Livecounts.io)", details: e.message });
+    res.status(500).json({ error: "Ошибка получения данных о видео", details: e.message });
   }
 }
